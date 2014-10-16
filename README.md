@@ -51,3 +51,11 @@ The calculation is implemented in various languages to compare performance -
 * Java - TBD
 * GSL Sparse - TBD
 
+# Data
+
+The sample data is attached in data/overlap.csv. Each implementation should be benchmarked against this sample data.
+
+* CSV file of about 118,000 rows, 4 MB in size
+* 837 funds, ranging from a few positions to thousands of positions in each fund
+* 15,162 security keys
+* The data matrix is sparse, only 1% of cells is non-zero: 118,000 / (837 * 15,162) = 0.93% 

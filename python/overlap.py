@@ -95,6 +95,7 @@ def generate_overlap_sparse_matrix():
         'fund_dict': fund_dict,
         'sp_overlap': sp_overlap,
         'security_keys': security_keys,
+        'security_cnt': security_cnt,
     }
 
 
@@ -107,6 +108,8 @@ def unit_test_2_funds():
     right_ov_ref = 0.27654
 
     sp = generate_overlap_sparse_matrix()
+    print "security keys = %d" % sp['security_cnt']
+
     min_ov, left_ov, right_ov = calculate_overlap(sp, fund_id1, fund_id2)
     print "ovlp  %.5f vs %.5f for %d vs %d" % (min_ov_ref, min_ov, fund_id1, fund_id2)
     print "left  %.5f vs %.5f for %d vs %d" % (left_ov_ref, left_ov, fund_id1, fund_id2)
@@ -122,6 +125,7 @@ def unit_test_all_funds(debug=False):
 
     sp = generate_overlap_sparse_matrix()
     fund_list = sp['fund_list']
+    print "security keys = %d" % sp['security_cnt']
     print "%s: start" % now_iso()
     cnt = 0
     for fund_id1 in fund_list:
