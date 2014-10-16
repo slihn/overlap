@@ -3,7 +3,11 @@ overlap
 
 High-Performance Sparse Matrix Implementation of Portfolio Overlap Calculation
 
-Portfolio overlap is a powerful tool to analyze how a portfolio compares to its peers. In the hedge funds, managers tend to flock into similar stocks, especially during a bull market. This is described as the herd behavior. But when the bear market sets in, hedge fund managers can engage in fire sale, and everybody is trying to pull out at the same time, causing unusual volatility and large drawdown. Therefore, monitoring portfolio overlap becomes very important to avoid the trampede of the herd behavior.
+# Introduction
+
+Portfolio overlap is a powerful tool to analyze how a portfolio compares to its peers. In the hedge funds, managers tend to flock into similar stocks, especially during a bull market. This is described as the herd behavior. But when the bear market sets in, hedge fund managers can engage in fire sale, and everybody is trying to pull out at the same time, causing unusual volatility and large drawdown. Therefore, monitoring portfolio through overlap becomes very important for fund managers to avoid the trampede of the herd behavior.
+
+The definition of portfolio overlap is simple. However, its calculation involves comparing every position between any two portfolios in the systems. The permutation grows quickly. Therefore, how to do it efficiently is an interesting topic in quantitative analysis.
 
 # Definition of Portfolio Overlap
 
