@@ -5,9 +5,9 @@ In this implementation, dok_matrix in scipy.sparse is used to achieve constant t
 
 # Performance
 
-Data: CSV file of about 118 rows, 4 MB
-PC Spec: Dell, Windows 7 64-bit, Intel Xeon W3550 @3.07GHz
-Memory: The program consumes about 50 MB for storing data in the sparse matrix
+* Data: CSV file of about 118 rows, 4 MB
+* PC Spec: Dell, Windows 7 64-bit, Intel Xeon W3550 @3.07GHz
+* Memory: The program consumes about 50 MB for storing data in the sparse matrix
 
 It takes about 95-110 seconds to generate the overlap matrix `OV`.
 There are 837 funds. The overlap matrix has 837*836/2 ~ 350,000 elements.

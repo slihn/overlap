@@ -12,9 +12,9 @@ The definition of portfolio overlap is simple. However, its calculation involves
 # Definition of Portfolio Overlap
 
 There are three different overlaps -
-* Minimum Overlap
-* Left Cross Overlap
-* Right Cross Overlap
+* Minimum Overlap - intersection between the two portfolios
+* Left Cross Overlap - measures the affected percentage in the first portfolio 
+* Right Cross Overlap - measures the affected percentage in the second portfolio
 
 Let's say `i,j` are two portfolios; `k` represents the security id -
 * `OV[i][j]` is the overlap between `i` and `j`; 
@@ -36,17 +36,18 @@ In a big-data database where you have thousands or 10s of thousands portfolios, 
 
 > `OV = S . S*` 
 
-where `*` is matrix transport; and `.` is an abstract form of `Sum_k(OP())`. 
+where `*` is matrix transport; and `.` is an abstract form of `Sum_k(OP(...))`. 
 
-(`.` is reduced to normal matrix dot operator when `OP = +`)
+(`.` is reduced to normal matrix dot operator when `OP` is just the addition, `+`)
 
 Therefore, large-scale computation of portfolio overlap `OV` can be most efficiently implemented by a high-performance sparse matrix library. When the library offers `O(1)` matrix lookup scalability (that is, lookup of `S[i][k]`), then the performance of calculating `OV` will scale as `O(N^2)` where `N` is number of portfolios. (Assuming number of securities remains statisically similar.)
 
 # Implementation
 
-I intend to implement the calculation in various languages to compare performance -
-* Python - scipy.sparse - dok_matrix
+The calculation is implemented in various languages to compare performance -
+* [Python - scipy.sparse - dok_matrix](https://github.com/slihn/overlap/blob/master/python/README.md)
 * R - TBD
+* Julia - TBD
 * Java - TBD
 * GSL Sparse - TBD
 
