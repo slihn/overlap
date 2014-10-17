@@ -36,9 +36,9 @@ In a big-data database where you have thousands or 10s of thousands portfolios, 
 
 > `OV = S . S*` 
 
-where `*` is matrix transport; and `.` is an abstract form of `Sum_k(OP(...))`. 
+where `*` is matrix transpose operator; and `.` is the abstract notation of `Sum_k(OP(...))`. 
 
-(`.` is reduced to normal matrix dot operator when `OP` is just the addition, `+`)
+(Note: `.` is reduced to the normal matrix dot operator when `OP` is just the addition, `+`)
 
 Therefore, large-scale computation of portfolio overlap `OV` can be most efficiently implemented by a high-performance sparse matrix library. When the library offers `O(1)` matrix lookup scalability (that is, lookup of `S[i][k]`), then the performance of calculating `OV` will scale as `O(N^2)` where `N` is number of portfolios. (Assuming number of securities remains statisically similar.)
 
@@ -48,7 +48,7 @@ The calculation is implemented in various languages to compare performance -
 * [Python - scipy.sparse - dok_matrix](https://github.com/slihn/overlap/blob/master/python/README.md)
 * R - TBD
 * Julia - TBD
-* Java - TBD
+* Java - EJML - TBD
 * GSL Sparse - TBD
 
 # Data

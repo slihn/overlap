@@ -99,27 +99,32 @@ def generate_overlap_sparse_matrix():
     }
 
 
-def unit_test_2_funds():
+def unit_test_2_funds(debug=False):
     fund_id1 = 178472
     fund_id2 = 216718
 
-    min_ov_ref = 0.26660
-    left_ov_ref = 0.44561
-    right_ov_ref = 0.27654
-
     sp = generate_overlap_sparse_matrix()
-    print "security keys = %d" % sp['security_cnt']
+    if debug:
+        print "security keys = %d" % sp['security_cnt']
 
-    min_ov, left_ov, right_ov = calculate_overlap(sp, fund_id1, fund_id2)
-    print "ovlp  %.5f vs %.5f for %d vs %d" % (min_ov_ref, min_ov, fund_id1, fund_id2)
-    print "left  %.5f vs %.5f for %d vs %d" % (left_ov_ref, left_ov, fund_id1, fund_id2)
-    print "right %.5f vs %.5f for %d vs %d" % (right_ov_ref, right_ov, fund_id1, fund_id2)
-    assert ("%.5f" % min_ov_ref) == ("%.5f" % min_ov)
-    assert ("%.5f" % left_ov_ref) == ("%.5f" % left_ov)
-    assert ("%.5f" % right_ov_ref) == ("%.5f" % right_ov)
+    min_overlap, cross_left, cross_right = calculate_overlap(sp, fund_id1, fund_id2)
+
+    # reference data, pre-calculated from another source
+    min_overlap_ref = 0.26660
+    cross_left_ref = 0.44561
+    cross_right_ref = 0.27654
+
+    print "ovlp  %.5f vs %.5f for %d vs %d" % (min_overlap_ref, min_overlap, fund_id1, fund_id2)
+    print "left  %.5f vs %.5f for %d vs %d" % (cross_left_ref, cross_left, fund_id1, fund_id2)
+    print "right %.5f vs %.5f for %d vs %d" % (cross_right_ref, cross_right, fund_id1, fund_id2)
+    assert ("%.5f" % min_overlap_ref) == ("%.5f" % min_overlap)
+    assert ("%.5f" % cross_left_ref) == ("%.5f" % cross_left)
+    assert ("%.5f" % cross_right_ref) == ("%.5f" % cross_right)
+
+    print "unit test pass"
 
 
-def unit_test_all_funds(debug=False):
+def overlap_for_all_funds(debug=False):
     print now_iso()
     tm_start = millis()
 
@@ -128,25 +133,106 @@ def unit_test_all_funds(debug=False):
     print "security keys = %d" % sp['security_cnt']
     print "%s: start" % now_iso()
     cnt = 0
+    fund_ov = dict()
     for fund_id1 in fund_list:
+        fund_ov[fund_id1] = dict()
         for fund_id2 in fund_list:
             if fund_id2 <= fund_id1:
                 continue
-            min_ov, left_ov, right_ov = calculate_overlap(sp, fund_id1, fund_id2)
+            min_overlap, cross_left, cross_right = calculate_overlap(sp, fund_id1, fund_id2)
+            fund_ov[fund_id1][fund_id2] = {
+                'min_overlap': min_overlap,
+                'cross_left': cross_left,
+                'cross_right': cross_right,
+            }
             cnt += 1
             if debug or cnt % 1000 == 0 or cnt < 100:
-                print "ovlp %7d  %.5f %.5f %.5f for %d vs %d" % (cnt, min_ov, left_ov, right_ov, fund_id1, fund_id2)
+                print "ovlp %7d  %.5f %.5f %.5f for %d vs %d" % \
+                      (cnt, min_overlap, cross_left, cross_right, fund_id1, fund_id2)
 
     tm_end = millis()
     print "%s: elapsed %d millis" % (now_iso(), tm_end-tm_start)
+    return fund_ov
 
 
+def fund_statistics(debug):
+    import math
+
+    sp = generate_overlap_sparse_matrix()
+
+    factor = 4
+    fund_list = sp['fund_list']
+    fund_dict = sp['fund_dict']
+    fund_stats = dict()
+    for fund_id in fund_list:
+        security_cnt = len(fund_dict[fund_id]['sp_security_list'])
+        if security_cnt < 1:
+            continue
+        if debug:
+            print "%d - %-6d" % (fund_id, security_cnt)
+        bucket = math.ceil(math.log10(security_cnt)/math.log10(factor))
+        if fund_stats.get(bucket) is None:
+            fund_stats[bucket] = 0
+        fund_stats[bucket] += 1
+
+    print "distribution of # of positions, bucketed by a factor of %d:" % factor
+    for bucket in sorted(fund_stats.keys()):
+        print "nbr of positions <= %-6d - nbr of funds %-6d" % (math.pow(factor, bucket), fund_stats[bucket])
+
+
+# ---------------------------------------------------------------- #
 def now_iso():
     return datetime.datetime.now().isoformat(' ')
+
 
 def millis():
     return int(round(time.time() * 1000))
 
+
+# ---------------------------------------------------------------- #
+def usage():
+    print """
+    -a, --all: generate overlap matrix for all funds in sample data
+    -u, --unit: invoke the unit test (between two funds)
+    -d, --debug: show debug messages
+    -s, --stats: statistics on funds, primarily distribution of # of positions
+    -h, --help: this help
+    """
+
+
+def main(argv):
+    import getopt
+    try:
+        opts, args = getopt.getopt(argv,
+                                   "daush",
+                                   ["debug", "all", "unit", "stats", "help"])
+    except getopt.GetoptError:
+        usage()
+        sys.exit(2)
+
+    debug_mode = False
+    for opt, arg in opts:
+        if opt in ('-d', '--debug'):
+            debug_mode = True
+            continue
+        elif opt in ('-a', '--all'):
+            overlap_for_all_funds(debug_mode)
+            continue
+        elif opt in ('-u', '--unit'):
+            unit_test_2_funds(debug_mode)
+            continue
+        elif opt in ('-s', '--stats'):
+            fund_statistics(debug_mode)
+            continue
+        elif opt in ('-h', '--help'):
+            usage()
+            sys.exit(0)
+        else:
+            print "Unknown option: %s" % opt
+            usage()
+            sys.exit(2)
+            
+            
 if __name__ == "__main__":
-    # unit_test_2_funds()
-    unit_test_all_funds(False)
+    import sys
+    main(sys.argv[1:])
