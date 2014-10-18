@@ -8,7 +8,8 @@ from os import path
 import csv
 
 data_file = path.join("..", "data", "overlap_data.csv")
-
+use_dense_matrix = False
+do_matrix_lookup = True
 
 def get_pos_size_data():
     csvfile = open(data_file, 'rb')
@@ -56,8 +57,12 @@ def calculate_overlap(sp, fund_id1, fund_id2):
     su = list(set(s1) & set(s2))  # This intersect is an important performance step
     sp_overlap = sp['sp_overlap']
     for s in su:
-        a = sp_overlap[i1, s]
-        b = sp_overlap[i2, s]
+        if do_matrix_lookup:
+            a = sp_overlap[i1, s]
+            b = sp_overlap[i2, s]
+        else:
+            a = 0.0
+            b = 0.0
         if a is not None and b is not None and a > 0.0 and b > 0.0:
             min_overlap += min(a, b)
             cross_left += a
@@ -89,6 +94,10 @@ def generate_overlap_sparse_matrix():
         sp_security_id = security_keys[ps['security_key']]
         sp_overlap[sp_fund_id, sp_security_id] = ps['pos_size']
         fund_dict[fund_id]['sp_security_list'].append(sp_security_id)
+
+    if use_dense_matrix:
+        sp_overlap = sp_overlap.todense()
+        print "Use dense matrix"
 
     return {
         'fund_list': fund_list,
