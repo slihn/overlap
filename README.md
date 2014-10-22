@@ -5,7 +5,12 @@ High-Performance Sparse Matrix Implementation of Portfolio Overlap Calculation
 
 # Introduction
 
-Portfolio overlap is a powerful tool to analyze how a portfolio compares to its peers. In the hedge funds, managers tend to flock into similar stocks, especially during a bull market. This is described as the herd behavior. But when the bear market sets in, hedge fund managers can engage in fire sale, and everybody is trying to pull out at the same time, causing unusual volatility and large drawdown. Therefore, monitoring portfolio through overlap becomes very important for fund managers to avoid the trampede of the herd behavior.
+Portfolio overlap attempts to estimate the correlation between two portfolios based on simple sum of position weights, instead of statistical properties of prices. 
+The math is much simpler, yet it is a powerful tool to analyze how a portfolio compares to its peers.
+The higher the overlap is, the more likely the portfolios will move in the same direction and magnitude. 
+In the hedge funds, managers tend to flock into similar stocks, especially during a bull market. 
+This is described as the herd behavior. But when the bear market sets in, hedge fund managers can engage in fire sale, and everybody is trying to pull out at the same time, causing unusual volatility and large drawdown. 
+Therefore, monitoring portfolio through overlap becomes very important for fund managers to avoid the trampede of the herd behavior.
 
 The definition of portfolio overlap is simple. However, its calculation involves comparing every position between any two portfolios in the system. The permutation grows quickly in a large database. Therefore, how to do it efficiently is an interesting topic in quantitative analysis.
 
@@ -41,21 +46,34 @@ where `*` is matrix transpose operator; and `.` is the abstract notation of `Sum
 (Note: `.` is reduced to the normal matrix dot operator when `OP` is just the addition, `+`)
 
 Therefore, large-scale computation of portfolio overlap `OV` can be most efficiently implemented by a high-performance sparse matrix library. When the library offers `O(1)` matrix lookup scalability (that is, lookup of `S[i][k]`), then the performance of calculating `OV` will scale as `O(N^2)` where `N` is number of portfolios. (Assuming number of securities remains statisically similar.)
+However, if sparse matrix lookup is much slower than that of dense matrix and the memory overhead of dense matrix is not much larger, then you would still want to use the faster dense matrix implementation.
+The choice of software library will be heavily dependent on your computing environment.
 
 # Implementation
 
 The calculation is implemented in various languages to compare performance -
-* [Python - scipy.sparse - dok_matrix](https://github.com/slihn/overlap/blob/master/python/README.md)
+* Python - [scipy.sparse - dok_matrix](https://github.com/slihn/overlap/blob/master/python/README.md)
+* Scala - [EJML (dense matrix)](https://code.google.com/p/efficient-java-matrix-library/)
 * R - TBD
 * Julia - TBD
-* Java - EJML - TBD
 * GSL Sparse - TBD
 
 # Data
 
-The sample data is attached in data/overlap.csv. Each implementation should be benchmarked against this sample data.
+Two sample files are attached in data/ folder. Each implementation should be benchmarked against the sample data, preferably the large sample.
 
-* CSV file of about 118,000 rows, 4 MB in size
+## Small sample
+
+* CSV file: overlap_data_small.csv
+* About 118,000 rows, 4 MB in size
 * 837 funds, ranging from a few positions to thousands of positions in each fund
 * 15,162 security keys
-* The data matrix is sparse, only 1% of cells is non-zero: 118,000 / (837 * 15,162) = 0.93% 
+* The data matrix is sparse, only 0.9% of cells is non-zero: 118,000 / (837 * 15,162) = 0.93% 
+
+## Large sample
+ 
+* CSV file: overlap_data.zip (contains overlap_data.csv)
+* About 897,000 rows, 30 MB in size after unzip. This is 7 times of the small sample.
+* 3839 funds, ranging from a few positions to thousands of positions in each fund
+* 37,826 security keys
+* The data matrix is sparse, only 0.6% of cells is non-zero: 897,000 / (3839 * 37,826) = 0.62% 

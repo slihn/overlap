@@ -7,7 +7,7 @@ import scala.collection.mutable.{HashSet => MutSet}
 case class PosSizeRow (fundId: Int, securityKey: String, posSize: Double)
 
 object OverlapData {
-  val dataFile = "../data/overlap_data.csv"
+  val dataFile = "../data/overlap_data_small.csv"
   val headerRef = List("fund_id", "security_key", "pos_size").toBuffer
 
   def readDataFile: (List[Int], ArrayBuffer[PosSizeRow]) = {

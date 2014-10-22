@@ -6,14 +6,38 @@ import datetime
 import time
 from os import path
 import csv
+import zipfile
+import StringIO
 
-data_file = path.join("..", "data", "overlap_data.csv")
-use_dense_matrix = False
-do_matrix_lookup = True
+
+# Global context
+use_large = True
+data_file_small = path.join("..", "data", "overlap_data_small.csv")
+data_file_large = path.join("..", "data", "overlap_data.zip")
+
+use_dense_matrix = False  # True: dense; False: sparse
+do_matrix_lookup = True  # True: matrix; False: constant
+
+
+def read_small_sample():
+    print "Use small sample file"
+    fh = open(data_file_small, 'rb')
+    rd = csv.reader(fh, delimiter=',', quotechar='"')
+    return fh, rd
+
+
+def read_large_sample():
+    print "Use large sample file"
+    fh = open(data_file_large, 'rb')
+    csv_file_in_zip = "overlap_data.csv"
+    data_io = StringIO.StringIO(zipfile.ZipFile(fh).read(csv_file_in_zip))
+    rd = csv.reader(data_io)
+    return fh, rd
+
 
 def get_pos_size_data():
-    csvfile = open(data_file, 'rb')
-    rd = csv.reader(csvfile, delimiter=',', quotechar='"')
+    fh, rd = read_large_sample() if use_large else read_small_sample()
+
     header = None
     data = []
     fund_dict = dict()
@@ -30,12 +54,13 @@ def get_pos_size_data():
         data.append(d)
         fund_dict[d['fund_id']] = 1
 
-    csvfile.close()
+    fh.close()
+
     fund_list = sorted(fund_dict.keys())
     print "fund_list = %d rows = %d" % (len(fund_list), len(data))
 
     assert fund_dict[178472] == 1
-    assert len(fund_list) == 837
+    assert len(fund_list) == (3839 if use_large else 837)
 
     return fund_list, data
 
@@ -149,11 +174,7 @@ def overlap_for_all_funds(debug=False):
             if fund_id2 <= fund_id1:
                 continue
             min_overlap, cross_left, cross_right = calculate_overlap(sp, fund_id1, fund_id2)
-            fund_ov[fund_id1][fund_id2] = {
-                'min_overlap': min_overlap,
-                'cross_left': cross_left,
-                'cross_right': cross_right,
-            }
+            fund_ov[fund_id1][fund_id2] = [min_overlap, cross_left, cross_right]
             cnt += 1
             if debug or cnt % 1000 == 0 or cnt < 100:
                 print "ovlp %7d  %.5f %.5f %.5f for %d vs %d" % \
@@ -168,6 +189,7 @@ def fund_statistics(debug):
     import math
 
     sp = generate_overlap_sparse_matrix()
+    print "security keys = %d" % sp['security_cnt']
 
     factor = 4
     fund_list = sp['fund_list']
