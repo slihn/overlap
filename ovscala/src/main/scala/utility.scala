@@ -13,4 +13,5 @@ case class Now() {
     df.setTimeZone(tz)
     df.format(now)
   }
+  def println(s: String) = Console.println("%s: %s" format (asISO, s))
 }

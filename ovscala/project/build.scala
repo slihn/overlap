@@ -13,6 +13,9 @@ object OverlapBuild extends sbt.Build {
                 "org.joda" % "joda-convert" % "1.2",
                 "com.github.tototoshi" %% "scala-csv" % "1.0.0",
                 "com.googlecode.efficient-java-matrix-library" % "ejml" % "0.25",
+                "com.googlecode.matrix-toolkits-java" % "mtj" % "1.0.1",
+                "com.github.fommil.netlib" % "all" % "1.1.2",
+                "org.apache.commons" % "commons-csv" % "1.0",
                 "org.apache.commons" % "commons-math" % "2.2"
               ) ++ Shared.testDeps(v)),
               publishArtifact := false

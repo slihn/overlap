@@ -68,7 +68,8 @@ Two sample files are attached in data/ folder. Each implementation should be ben
 * About 118,000 rows, 4 MB in size
 * 837 funds, ranging from a few positions to thousands of positions in each fund
 * 15,162 security keys
-* The data matrix is sparse, only 0.9% of cells is non-zero: 118,000 / (837 * 15,162) = 0.93% 
+* Dense matrix size = 837 * 15,162 = 12,690,594
+* The data matrix is sparse, only 0.9% of cells is non-zero: 118,000 / 12,690,594 = 0.93% 
 
 ## Large sample
  
@@ -76,4 +77,5 @@ Two sample files are attached in data/ folder. Each implementation should be ben
 * About 897,000 rows, 30 MB in size after unzip. This is 7 times of the small sample.
 * 3839 funds, ranging from a few positions to thousands of positions in each fund
 * 37,826 security keys
-* The data matrix is sparse, only 0.6% of cells is non-zero: 897,000 / (3839 * 37,826) = 0.62% 
+* Dense matrix size = 3839 * 37,826 = 145,214,014
+* The data matrix is sparse, only 0.6% of cells is non-zero: 897,000 / 145,214,014 = 0.62% 
