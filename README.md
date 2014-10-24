@@ -53,11 +53,8 @@ The choice of software library will be heavily dependent on your computing envir
 
 The calculation is implemented in various languages to compare performance -
 * Python - [scipy.sparse - dok_matrix](https://github.com/slihn/overlap/blob/master/python/README.md). It is very easy to implement this in python. But python's dynamic type is slow in crunching through the numbers.
-* Scala - [EJML (dense matrix)](https://code.google.com/p/efficient-java-matrix-library/) [MTJ](https://github.com/fommil/matrix-toolkits-java). Scala's static type offers very good performance after careful tuning.
-* Cython - Testing C performance with [Cython](http://cython.org/)
-* R - TBD. Performance probably won't be too good due to its dynamic type.
-* Julia - TBD
-* GSL Sparse - TBD
+* Scala -  dense matrix using [EJML](https://code.google.com/p/efficient-java-matrix-library/) and [MTJ](https://github.com/fommil/matrix-toolkits-java). Scala's static type offers very good performance after careful tuning.
+* Cython - testing C performance with [Cython](http://cython.org/). It is extremely fast.
 
 # Data
 
