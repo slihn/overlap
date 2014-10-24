@@ -40,6 +40,6 @@ Overlap between funds: 178472 and 216718
 
 # How to Run
 
-Simply execute `overlap.py` with `python2.7`, which will invoke `overlap_for_all_funds()`.
-
+Simply execute `overlap.py -a` with `python2.7`, which will invoke `overlap_for_all_funds()`.
+Check out `overlap.py -h` for other usage.
 
