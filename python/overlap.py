@@ -8,15 +8,14 @@ from os import path
 import csv
 import zipfile
 import StringIO
-
+# from numba import jit
 
 # Global context
 use_large = True
 data_file_small = path.join("..", "data", "overlap_data_small.csv")
 data_file_large = path.join("..", "data", "overlap_data.zip")
 
-use_dense_matrix = False  # True: dense; False: sparse
-do_matrix_lookup = True  # True: matrix; False: constant
+matrix_mode = 1  # 1: dense; 2: sparse; 0: no matrix; -1: excluding for loop; -2: excluding set join
 
 
 def read_small_sample():
@@ -35,7 +34,7 @@ def read_large_sample():
     return fh, rd
 
 
-def get_pos_size_data():
+def get_pos_size_data(use_large):
     fh, rd = read_large_sample() if use_large else read_small_sample()
 
     header = None
@@ -65,40 +64,44 @@ def get_pos_size_data():
     return fund_list, data
 
 
-def calculate_overlap(sp, fund_id1, fund_id2):
+#@jit
+def calculate_overlap(fund_id1, fund_id2, fund_dict, sp_overlap):
     # Overlap(i,j) = Sum_k(Min(S_i_k, S_j_k))
     # i,j: institutions, k: security id, S_i_k: position size
     min_overlap = 0.0
     cross_left = 0.0
     cross_right = 0.0
 
-    data1 = sp['fund_dict'][fund_id1]
-    data2 = sp['fund_dict'][fund_id2]
+    data1 = fund_dict[fund_id1]
+    data2 = fund_dict[fund_id2]
     i1 = data1['sp_fund_id']
-    s1 = data1['sp_security_list']
+    s1 = data1['sp_security_set']
     i2 = data2['sp_fund_id']
-    s2 = data2['sp_security_list']
+    s2 = data2['sp_security_set']
 
-    su = list(set(s1) & set(s2))  # This intersect is an important performance step
-    sp_overlap = sp['sp_overlap']
+    if matrix_mode == -2:
+        return [min_overlap, cross_left, cross_right]
+
+    su = s1 & s2  # This intersect is an important performance step
+    if matrix_mode == -1:
+        return [min_overlap, cross_left, cross_right]
+
     for s in su:
-        if do_matrix_lookup:
+        if matrix_mode > 0:
             a = sp_overlap[i1, s]
             b = sp_overlap[i2, s]
-        else:
-            a = 0.0
-            b = 0.0
-        if a is not None and b is not None and a > 0.0 and b > 0.0:
-            min_overlap += min(a, b)
-            cross_left += a
-            cross_right += b
+            if a > 0.0 and b > 0.0:
+                min_overlap += min(a, b)
+                cross_left += a
+                cross_right += b
 
     return [min_overlap, cross_left, cross_right]
 
 
-def generate_overlap_sparse_matrix():
+#@jit
+def generate_overlap_sparse_matrix(use_large):
 
-    fund_list, rs = get_pos_size_data()
+    fund_list, rs = get_pos_size_data(use_large)
     fund_dict = dict()
     for i in range(len(fund_list)):
         fund_dict[fund_list[i]] = {'sp_fund_id': i, 'sp_security_list': []}
@@ -107,8 +110,8 @@ def generate_overlap_sparse_matrix():
     security_keys = dict()
     for ps in rs:
         k = ps['security_key']
-        sp_security_id = security_keys.get(k)
-        if sp_security_id is None:
+        sp_security_id = security_keys.get(k, -1)
+        if sp_security_id == -1:
             security_keys[k] = security_cnt
             security_cnt += 1
 
@@ -120,7 +123,10 @@ def generate_overlap_sparse_matrix():
         sp_overlap[sp_fund_id, sp_security_id] = ps['pos_size']
         fund_dict[fund_id]['sp_security_list'].append(sp_security_id)
 
-    if use_dense_matrix:
+    for fund_id in fund_list:
+        fund_dict[fund_id]['sp_security_set'] = set(fund_dict[fund_id]['sp_security_list'])
+
+    if matrix_mode == 1:
         sp_overlap = sp_overlap.todense()
         print "Use dense matrix"
 
@@ -137,11 +143,13 @@ def unit_test_2_funds(debug=False):
     fund_id1 = 178472
     fund_id2 = 216718
 
-    sp = generate_overlap_sparse_matrix()
+    sp = generate_overlap_sparse_matrix(use_large)
+    fund_dict = sp['fund_dict']
+    sp_overlap = sp['sp_overlap']
     if debug:
         print "security keys = %d" % sp['security_cnt']
 
-    min_overlap, cross_left, cross_right = calculate_overlap(sp, fund_id1, fund_id2)
+    min_overlap, cross_left, cross_right = calculate_overlap(fund_id1, fund_id2, fund_dict, sp_overlap)
 
     # reference data, pre-calculated from another source
     min_overlap_ref = 0.26660
@@ -161,8 +169,11 @@ def unit_test_2_funds(debug=False):
 def overlap_for_all_funds(debug=False):
     print now_iso()
     tm_start = millis()
+    cnt_mod = 5000 if use_large else 1000
 
-    sp = generate_overlap_sparse_matrix()
+    sp = generate_overlap_sparse_matrix(use_large)
+    fund_dict = sp['fund_dict']
+    sp_overlap = sp['sp_overlap']
     fund_list = sp['fund_list']
     print "security keys = %d" % sp['security_cnt']
     print "%s: start" % now_iso()
@@ -173,12 +184,13 @@ def overlap_for_all_funds(debug=False):
         for fund_id2 in fund_list:
             if fund_id2 <= fund_id1:
                 continue
-            min_overlap, cross_left, cross_right = calculate_overlap(sp, fund_id1, fund_id2)
+            min_overlap, cross_left, cross_right = calculate_overlap(fund_id1, fund_id2, fund_dict, sp_overlap)
             fund_ov[fund_id1][fund_id2] = [min_overlap, cross_left, cross_right]
             cnt += 1
-            if debug or cnt % 1000 == 0 or cnt < 100:
-                print "ovlp %7d  %.5f %.5f %.5f for %d vs %d" % \
-                      (cnt, min_overlap, cross_left, cross_right, fund_id1, fund_id2)
+            if debug or cnt % cnt_mod == 0 or cnt < 100:
+                elapsed = ("elapsed %d sec" % ((millis()-tm_start)/1000)) if cnt % 100000 == 0 else ""
+                print "ovlp %7d  %.5f %.5f %.5f for %d vs %d %s" % \
+                      (cnt, min_overlap, cross_left, cross_right, fund_id1, fund_id2, elapsed)
 
     tm_end = millis()
     print "%s: elapsed %d millis" % (now_iso(), tm_end-tm_start)
@@ -188,7 +200,7 @@ def overlap_for_all_funds(debug=False):
 def fund_statistics(debug):
     import math
 
-    sp = generate_overlap_sparse_matrix()
+    sp = generate_overlap_sparse_matrix(use_large)
     print "security keys = %d" % sp['security_cnt']
 
     factor = 4
