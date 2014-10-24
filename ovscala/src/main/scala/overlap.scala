@@ -51,7 +51,7 @@ object Overlap {
   def overlapForAllFunds(conf: OverlapConfig, debug: Boolean = false) = {
     println2("Overlap start")
     val useLarge = conf.useLarge
-    val cntMod = if (useLarge) 5000 else 1000
+    val cntMod = if (useLarge) 20000 else 1000
 
     val tmStart = millis()
     val m = OverlapDataMatrix(conf)
@@ -67,7 +67,7 @@ object Overlap {
         fundOverlap2 += fundId2 -> ovt
         cnt += 1
         if (debug || cnt % cntMod == 0 || cnt < 100) {
-          val elapsed = if (cnt % 100000 == 0) "elapsed %d sec" format ((millis() - tmStart)/1000) else ""
+          val elapsed = if (cnt % 500000 == 0) "elapsed %d sec" format ((millis() - tmStart)/1000) else ""
           println("ovlp %7d  %.5f %.5f %.5f for %d vs %d %s" format
             (cnt, ovt.minOverlap, ovt.crossLeft, ovt.crossRight, fundId1, fundId2, elapsed))
         }
