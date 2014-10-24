@@ -2,7 +2,7 @@ Overlap in Scala
 ===================
 
 This is an implementation of portfolio overlap in scala.
-EJML SimpleMatrix (not a sparse matrix) is used as the numerical back-end.
+EJML SimpleMatrix and MTJ DenseMatrix (not sparse matrix) are used as the numerical back-end.
 
 # Performance
 
