@@ -7,13 +7,15 @@ from os import path
 import csv
 import zipfile
 import StringIO
-import cov  # this is cython
+import cov  # this is cython, using dense matrix
+import cov_packed # this is cython, using sparse vector
 
 # Global context
 use_large = True
 data_file_small = path.join("..", "data", "overlap_data_small.csv")
 data_file_large = path.join("..", "data", "overlap_data.zip")
 
+use_cov_packed = True
 
 def read_small_sample():
     print "Use small sample file"
@@ -61,17 +63,28 @@ def get_pos_size_data(use_large):
     return fund_list, data
 
 
+def get_overlap_matrix():
+    fund_list, data = get_pos_size_data(use_large)
+    if not use_cov_packed:
+        sp = cov.generate_overlap_matrix(fund_list, data)
+    else:
+        sp = cov_packed.generate_overlap_matrix(fund_list, data)
+    return sp
+
+
 def unit_test_2_funds(debug=False):
     fund_id1 = 178472
     fund_id2 = 216718
 
-    fund_list, data = get_pos_size_data(use_large)
-    sp = cov.generate_overlap_matrix(fund_list, data)
+    sp = get_overlap_matrix()
+    if not use_cov_packed:
+        min_overlap, cross_left, cross_right = cov.calculate_overlap(fund_id1, fund_id2)
+    else:
+        min_overlap, cross_left, cross_right = cov_packed.calculate_overlap(fund_id1, fund_id2)
 
     if debug:
         print "security keys = %d" % sp['security_cnt']
     print "calculate overlap for fund %d vs %d" % (fund_id1, fund_id2)
-    min_overlap, cross_left, cross_right = cov.calculate_overlap(fund_id1, fund_id2)
 
     # reference data, pre-calculated from another source
     min_overlap_ref = 0.26660
@@ -92,13 +105,15 @@ def overlap_for_all_funds(debug=False):
     print "%s: read data" % now_iso()
     tm_start = millis()
 
-    fund_list, data = get_pos_size_data(use_large)
-    sp = cov.generate_overlap_matrix(fund_list, data)
+    sp = get_overlap_matrix()
     print "security keys = %d" % sp['security_cnt']
     print "%s: start" % now_iso()
 
     # Here we call into the high-performance cython implementation
-    fund_ov = cov.overlap_for_all_funds(sp, use_large, debug)
+    if not use_cov_packed:
+        fund_ov = cov.overlap_for_all_funds(sp, use_large, debug)
+    else:
+        fund_ov = cov_packed.overlap_for_all_funds(sp, use_large, debug)
 
     tm_end = millis()
     print "%s: elapsed %d millis" % (now_iso(), tm_end-tm_start)
@@ -108,8 +123,7 @@ def overlap_for_all_funds(debug=False):
 def fund_statistics(debug):
     import math
 
-    fund_list, data = get_pos_size_data(use_large)
-    sp = cov.generate_overlap_matrix(fund_list, data)
+    sp = get_overlap_matrix()
     print "security keys = %d" % sp['security_cnt']
 
     factor = 4
