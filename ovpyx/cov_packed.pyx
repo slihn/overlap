@@ -47,7 +47,7 @@ def calculate_overlap(long fund_id1, long fund_id2):
 
     # print "calc %d %d" % (fund_id1, fund_id2)
 
-    i1, s1 = fund_dict_tup[fund_id1]  # s1 is sorted list, not Set
+    i1, s1 = fund_dict_tup[fund_id1]
     i2, s2 = fund_dict_tup[fund_id2]
     ptr1 = fund_ptr_list[i1]
     ptr2 = fund_ptr_list[i2]
@@ -55,29 +55,26 @@ def calculate_overlap(long fund_id1, long fund_id2):
     if matrix_mode == -2:
         return [min_overlap, cross_left, cross_right]
 
-    p1 = 0
-    p2 = 0
-    while (p1 < ptr1.length and p2 < ptr2.length):
-        if ptr1.start + p1 >= mat_len:
-            print "Index too large: %d x %d vs %d" % (i1, p1, mat_len)
-            raise MemoryError()
-        if ptr2.start + p2 >= mat_len:
-            print "Index too large: %d x %d vs %d" % (i2, p2, mat_len)
-            raise MemoryError()
+    p1 = ptr1.start
+    p2 = ptr2.start
+    # TODO how do we use set to reduce while-loop scope? su = s1 & s2
+    while (p1 < ptr1.end and p2 < ptr2.end):
 
         if matrix_mode == -1:
             p1 += 1
             p2 += 1
             continue
 
-        d1 = packed_overlap[ptr1.start + p1]
-        d2 = packed_overlap[ptr2.start + p2]
+        d1 = packed_overlap[p1]
+        d2 = packed_overlap[p2]
         if matrix_mode <= 0:
             if d1.sp_security_id <= d2.sp_security_id:
                 p1 += 1
             if d1.sp_security_id >= d2.sp_security_id:
                 p2 += 1
             continue
+
+        # TODO the sp_security_id comparison appears to be quite slow
         if d1.sp_security_id == d2.sp_security_id:
             a = d1.pos_size
             b = d2.pos_size
@@ -175,7 +172,7 @@ def generate_overlap_matrix(fund_list, data):
     for fund_id in fund_list:
         fnd = fund_dict[fund_id]
         s = fnd['sp_security_list']
-        fund_dict_tup[fund_id] = (fnd['sp_fund_id'], s)
+        fund_dict_tup[fund_id] = (fnd['sp_fund_id'], set(s))
 
     return {
         'fund_list': fund_list,

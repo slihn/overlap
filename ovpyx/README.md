@@ -27,7 +27,7 @@ Also there is a performance hit in the python "set join" operation (~20 seconds)
 
 * Memory: 500 MB for sparse matrix. The memory footprint is reduced by the sparse implementation.
 * No matrix lookup: The elapsed time is 40 seconds. 
-* Use sparse lookup: The elapsed time is 160 seconds.
+* Use sparse lookup: The elapsed time is 260 seconds.
 
 This method is suggested by Will Meyer. It uses a one-dimensional position array to store (sorted) security id and position size.
 And a pointer structure to label the start and end locations for each fund. This is a form of sparse implementation.
