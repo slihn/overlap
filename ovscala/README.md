@@ -2,7 +2,8 @@ Overlap in Scala
 ===================
 
 This is an implementation of portfolio overlap in scala.
-EJML SimpleMatrix and MTJ DenseMatrix (not sparse matrix) are used as the numerical back-end.
+EJML SimpleMatrix and MTJ DenseMatrix are used as the numerical back-end.
+Sparse implementation uses a version suggested by Will Meyer.
 
 # Performance
 
@@ -36,12 +37,14 @@ But the memory foot print is very large.
 
 * Memory: 
 ** Dense matrix - 1.8 GB for both EJML and MTJ. This is quite large on 30MB of raw data.
-** Sparse matrix - TBD, I can't find any suitable implementation yet...
+** Sparse matrix - 600 MB for EJML and 500 MB for MTJ. This is reasonable.
 * No matrix lookup: The elapsed time is 110 seconds. (Excluding for loop: 110 seconds; excluding set join: 6 seconds)
 ** The "set join" cost is relatively high, compared to the matrix lookup.
 * Use dense matrix: The elapsed time is 158 seconds (EJML); 122 seconds (MTJ).
 ** Here you can see MTJ's C based library is significantly faster than EJML.
-* Use sparse matrix: N/A
+* Use sparse matrix: The elapsed time is 46 seconds(EJML); 42 seconds (MTJ). 
+** The sparse implementation is impressively fast.
+** For small matrix, EJML and MTJ are comparable in performance.
 
 # How to Run
 
