@@ -26,8 +26,15 @@ Also there is a performance hit in the python "set join" operation (~20 seconds)
 > Set `use_cov_packed = True` in `overlap.py`
 
 * Memory: 500 MB for sparse matrix. The memory footprint is reduced by the sparse implementation.
+
+** 90% Pure implementation in Cython
 * No matrix lookup: The elapsed time is 40 seconds. 
 * Use sparse lookup: The elapsed time is 260 seconds.
+** Core calculation implemented in C code (Large structure still in Cython)
+* No matrix lookup: The elapsed time is 6 seconds. 
+* Use sparse lookup: The elapsed time is 39 seconds.
+
+> As you can see, pyx is 10 times faster than python, and C is 6 times faster than pyx
 
 This method is suggested by Will Meyer. It uses a one-dimensional position array to store (sorted) security id and position size.
 And a pointer structure to label the start and end locations for each fund. This is a form of sparse implementation.

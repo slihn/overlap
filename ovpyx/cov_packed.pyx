@@ -6,21 +6,15 @@ __author__ = 'slihn'
 import datetime
 import time
 from libc.stdlib cimport malloc, free
+from cov_calc cimport calculate_overlap_c
+from cov_calc cimport position, fund_pointer, ov_output
 
-matrix_mode = 1  # 1: dense; 0: no matrix; -1: excluding for loop; -2: excluding set join
+matrix_mode = 2  # 2: sparse; 0: no matrix; -1: excluding for loop; -2: excluding set join
+use_c_impl = 1   # 1: use c impl; 0: use pyx impl (much slower)
 
 cdef long fund_len
 cdef long security_len
 cdef long mat_len
-
-cdef struct position:
-    long sp_security_id
-    double pos_size
-
-cdef struct fund_pointer:
-    long start
-    long end
-    long length
 
 cdef position *packed_overlap
 cdef fund_pointer *fund_ptr_list
@@ -34,30 +28,27 @@ def free_memory():
     free(fund_ptr_list)
 
 
-def calculate_overlap(long fund_id1, long fund_id2):
+cdef ov_output calculate_overlap_pyx(long sp_fund_id1, long sp_fund_id2):
     # Overlap(i,j) = Sum_k(Min(S_i_k, S_j_k))
     # i,j: institutions, k: security id, S_i_k: position size
-    cdef double min_overlap = 0.0
-    cdef double cross_left = 0.0
-    cdef double cross_right = 0.0
+    cdef ov_output ov
     cdef double a, b
     cdef long p1, p2
     cdef fund_pointer ptr1, ptr2
     cdef position d1, d2
 
-    # print "calc %d %d" % (fund_id1, fund_id2)
+    ov.min_overlap = 0.0
+    ov.cross_left = 0.0
+    ov.cross_right = 0.0
 
-    i1, s1 = fund_dict_tup[fund_id1]
-    i2, s2 = fund_dict_tup[fund_id2]
-    ptr1 = fund_ptr_list[i1]
-    ptr2 = fund_ptr_list[i2]
+    ptr1 = fund_ptr_list[sp_fund_id1]
+    ptr2 = fund_ptr_list[sp_fund_id2]
 
     if matrix_mode == -2:
-        return [min_overlap, cross_left, cross_right]
+        return ov
 
     p1 = ptr1.start
     p2 = ptr2.start
-    # TODO how do we use set to reduce while-loop scope? su = s1 & s2
     while (p1 < ptr1.end and p2 < ptr2.end):
 
         if matrix_mode == -1:
@@ -78,11 +69,11 @@ def calculate_overlap(long fund_id1, long fund_id2):
         if d1.sp_security_id == d2.sp_security_id:
             a = d1.pos_size
             b = d2.pos_size
-            # print "%d %d | %d = %.6f %.6f" % (i1, i2, d1.sp_security_id, a, b)
+            # print "%d %d | %d = %.6f %.6f" % (sp_fund_id1, sp_fund_id2, d1.sp_security_id, a, b)
             if a > 0.0 and b > 0.0:
-                min_overlap += min(a, b)
-                cross_left += a
-                cross_right += b
+                ov.min_overlap += min(a, b)
+                ov.cross_left += a
+                ov.cross_right += b
             p1 += 1
             p2 += 1
         elif d1.sp_security_id < d2.sp_security_id:
@@ -90,11 +81,25 @@ def calculate_overlap(long fund_id1, long fund_id2):
         elif d1.sp_security_id > d2.sp_security_id:
             p2 += 1
         else:
-            print "Index misaligned for sp_funds: %d x %d" % (i1, i2)
+            print "Index misaligned for sp_funds: %d x %d" % (sp_fund_id1, sp_fund_id2)
             raise MemoryError()
 
-    return [min_overlap, cross_left, cross_right]
+    return ov
 
+
+# python wrapper
+def calculate_overlap(long fund_id1, long fund_id2):
+    global packed_overlap, fund_ptr_list
+    cdef ov_output ov
+    sp_fund_id1, s1 = fund_dict_tup[fund_id1]
+    sp_fund_id2, s2 = fund_dict_tup[fund_id2]
+
+    if use_c_impl > 0:
+        ov = calculate_overlap_c(sp_fund_id1, sp_fund_id2, packed_overlap, fund_ptr_list, matrix_mode)
+    else:
+        ov = calculate_overlap_pyx(sp_fund_id1, sp_fund_id2)
+
+    return [ov.min_overlap, ov.cross_left, ov.cross_right]
 
 def generate_overlap_matrix(fund_list, data):
     global packed_overlap, fund_ptr_list
@@ -183,8 +188,14 @@ def generate_overlap_matrix(fund_list, data):
 
 # ---------------------------------------------------------------- #
 def overlap_for_all_funds(sp, use_large, debug=False):
+    cdef ov_output ov
+    cdef long cnt, cnt_mod
+    cdef int debug_c = 1 if debug else 0
+
+    print "matrix mode = %d" % matrix_mode
+
     tm_start = millis()
-    cnt_mod = 20000 if use_large else 1000
+    cnt_mod = 50000 if use_large else 1000
     fund_list = sp['fund_list']
     cnt = 0
     fund_ov = dict()
@@ -193,14 +204,20 @@ def overlap_for_all_funds(sp, use_large, debug=False):
         for fund_id2 in fund_list:
             if fund_id2 <= fund_id1:
                 continue
-            min_overlap, cross_left, cross_right = calculate_overlap(fund_id1, fund_id2)
-            # min_overlap, cross_left, cross_right = [0,0,0]
-            fund_ov[fund_id1][fund_id2] = [min_overlap, cross_left, cross_right]
+            sp_fund_id1, s1 = fund_dict_tup[fund_id1]
+            sp_fund_id2, s2 = fund_dict_tup[fund_id2]
+            if use_c_impl > 0:
+                ov = calculate_overlap_c(sp_fund_id1, sp_fund_id2, packed_overlap, fund_ptr_list, matrix_mode)
+            else:
+                ov = calculate_overlap_pyx(sp_fund_id1, sp_fund_id2)
+
+            # fund_ov being a python dict of dict has quite a bit of performance hit
+            # fund_ov[fund_id1][fund_id2] = [ov.min_overlap, ov.cross_left, ov.cross_right]
             cnt += 1
-            if debug or cnt % cnt_mod == 0 or cnt < 100:
+            if cnt % cnt_mod == 0 or debug_c > 0:
                 elapsed = ("elapsed %d sec" % ((millis()-tm_start)/1000)) if cnt % 500000 == 0 else ""
                 print "ovlp %7d  %.5f %.5f %.5f for %d vs %d %s" % \
-                      (cnt, min_overlap, cross_left, cross_right, fund_id1, fund_id2, elapsed)
+                      (cnt, ov.min_overlap, ov.cross_left, ov.cross_right, fund_id1, fund_id2, elapsed)
 
     return fund_ov
 
