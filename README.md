@@ -46,15 +46,18 @@ where `*` is matrix transpose operator; and `.` is the abstract notation of `Sum
 (Note: `.` is reduced to the normal matrix dot operator when `OP` is just the addition, `+`)
 
 Therefore, large-scale computation of portfolio overlap `OV` can be most efficiently implemented by a high-performance sparse matrix library. When the library offers `O(1)` matrix lookup scalability (that is, lookup of `S[i][k]`), then the performance of calculating `OV` will scale as `O(N^2)` where `N` is number of portfolios. (Assuming number of securities remains statisically similar.)
-However, if sparse matrix lookup is much slower than that of dense matrix and the memory overhead of dense matrix is not much larger, then you would still want to use the faster dense matrix implementation.
+However, lookup in sparse matrix is usually slower than `O(1)` and is `O(<k>)` where `<k>` is average number of positions in these portfolios. if sparse matrix lookup is much slower than that of dense matrix and the memory overhead of dense matrix is not much larger, then you would still want to use the faster dense matrix implementation.
+
+The other performance driver is the intersect of security keys, `{k in i} U {k in j}`. How this is calculated can affect the elapsed time as much as matrix lookup. The sparse implementation in Scala and Cython/C combines the two aspects together to deliver high performance.
+
 The choice of software library will be heavily dependent on your computing environment.
 
 # Implementation
 
 The calculation is implemented in various languages to compare performance -
-* Python - [scipy.sparse - dok_matrix](https://github.com/slihn/overlap/blob/master/python/README.md). It is very easy to implement this in python. But python's dynamic type is slow in crunching through the numbers.
-* Scala -  dense matrix using [EJML](https://code.google.com/p/efficient-java-matrix-library/) and [MTJ](https://github.com/fommil/matrix-toolkits-java). Scala's static type offers very good performance after careful tuning.
-* Cython - testing C performance with [Cython](http://cython.org/). It is extremely fast.
+* [Python Impl](https://github.com/slihn/overlap/blob/master/python/README.md) - [scipy.sparse](http://docs.scipy.org/doc/scipy-0.14.0/reference/sparse.html) - dok_matrix. It is very easy to implement this in python. But python's dynamic type is slow for number crunching.
+* [Scala Impl](https://github.com/slihn/overlap/tree/master/ovscala) -  Dense matrix using [EJML](https://code.google.com/p/efficient-java-matrix-library/) and [MTJ](https://github.com/fommil/matrix-toolkits-java). Scala's static type offers very good performance after careful tuning.
+* [Cython Impl](https://github.com/slihn/overlap/tree/master/ovpyx) - Testing C performance with [Cython](http://cython.org/). Both dense matrix and sparse matrix (with C extension) are implemented and both are extremely fast.
 
 # Data
 
@@ -62,7 +65,7 @@ Two sample files are attached in data/ folder. Each implementation should be ben
 
 ## Small sample
 
-* CSV file: overlap_data_small.csv
+* CSV file: `overlap_data_small.csv`
 * About 118,000 rows, 4 MB in size
 * 837 funds, ranging from a few positions to thousands of positions in each fund
 * 15,162 security keys
@@ -71,7 +74,7 @@ Two sample files are attached in data/ folder. Each implementation should be ben
 
 ## Large sample
  
-* CSV file: overlap_data.zip (contains overlap_data.csv)
+* CSV file: `overlap_data.zip` (contains `overlap_data.csv`)
 * About 897,000 rows, 30 MB in size after unzip. This is 7 times of the small sample.
 * 3839 funds, ranging from a few positions to thousands of positions in each fund
 * 37,826 security keys
