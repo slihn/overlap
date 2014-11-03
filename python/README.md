@@ -30,6 +30,8 @@ The major burden of this calculation is on the matrix lookup.
 * Use dense matrix: The elapsed time is 1400 seconds.
 * Use sparse matrix: The elapsed time is 2400 seconds.
 
+This slowness is due to the dynamic language nature of python. Check out [Cython/C integration](https://github.com/slihn/overlap/tree/master/ovpyx) for a high performance implementation.
+
 # Unit Test
 
 Overlap between funds: 178472 and 216718
