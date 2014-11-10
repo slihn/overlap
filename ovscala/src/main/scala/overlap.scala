@@ -10,13 +10,11 @@ case class OverlapConfig(useLarge: Boolean, matrixMode: Int)
 // matrixMode: 1: dense; 2: sparse
 
 object Overlap {
-  val conf = OverlapConfig(true, 2)
+  val conf = OverlapConfig(useLarge = true, matrixMode = 2)
   def main(args: Array[String]) = {
     if (args.length == 1 && args(0) == "unit") unitTest2Funds(conf)
     if (args.length == 1 && args(0) == "all") overlapForAllFunds(conf)
     if (args.length == 1 && args(0) == "read") {
-      //val (fundList, data) = OverlapData.readDataFile(conf.useLarge)
-      //println2("data = %d" format data.length)
       val m = overlap_dense.OverlapDataMatrix(conf)
       val mt = m.generate
       //println2("mt size = %d" format mt.getNumElements) // only good for ejml

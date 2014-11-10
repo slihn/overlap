@@ -56,16 +56,18 @@ case class OverlapDataMatrix(conf: OverlapConfig) {
       matrixLen += len
     }
 
+    // You can choose either EJML or MTJ to test their performance
     val mt = new SimpleMatrix(matrixLen, 2) // EJML
     //val mt = new DenseMatrix(matrixLen, 2) // MTJ
+
     Now().println("Sparse matrix created: %d" format matrixLen)
 
     for (spFundId <- 0 until fundList.length) {
       val fundId = spFundMap.get(spFundId).get
+      val ptr = fundPointerMap.get(spFundId).get
       val ds = allFundSecurities.get(fundId).get.securityList.sortBy(_.spSecurityId)
       for (i <- 0 until ds.length) {
         val d = ds(i)
-        val ptr = fundPointerMap.get(spFundId).get
         val j = ptr.start + i
         if (j >= matrixLen) {
           println("Index too large: %d x %d vs %d" format (spFundId, d.spSecurityId, matrixLen))
@@ -112,7 +114,6 @@ case class OverlapCalculator(m: OverlapDataMatrix) extends AbstractOverlapCalcul
 
     var p1 = ptr1.start
     var p2 = ptr2.start
-    // TODO how do we use set to reduce while-loop scope? su = s1 & s2
     while (p1 < ptr1.end && p2 < ptr2.end) {
       if (matrixMode >= 0) {
         val d1 = Position(mt.get(p1, 0).toInt, mt.get(p1, 1))
