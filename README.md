@@ -43,7 +43,7 @@ In a big-data database where you have thousands or 10s of thousands portfolios, 
 
 where `*` is matrix transpose operator; and `.` is the abstract notation of `Sum_k(OP(...))`. 
 
-(Note: `.` is reduced to the normal matrix dot operator when `OP` is just the addition, `+`)
+(Note: `.` is reduced to the normal matrix dot operator when `OP` is just the multiplication, `a x b`)
 
 Therefore, large-scale computation of portfolio overlap `OV` can be most efficiently implemented by a high-performance sparse matrix library. When the library offers `O(1)` matrix lookup scalability (that is, lookup of `S[i][k]`), then the performance of calculating `OV` will scale as `O(N^2)` where `N` is number of portfolios. (Assuming number of securities remains statisically similar.)
 However, lookup in sparse matrix is usually slower than `O(1)` and is `O(<k>)` where `<k>` is average number of positions in these portfolios. if sparse matrix lookup is much slower than that of dense matrix and the memory overhead of dense matrix is not much larger, then you would still want to use the faster dense matrix implementation.
